@@ -2,5 +2,6 @@
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "features": {
       "ghcr.io/fhoda/codespaces-features/astro-cli:1": {}
-  }
+  },
+  "postCreateCommand": "astro dev start --wait 2m"
 }
