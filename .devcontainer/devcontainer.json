@@ -3,5 +3,5 @@
   "features": {
       "ghcr.io/fhoda/codespaces-features/astro-cli:1": {}
   },
-  "postCreateCommand": "astro dev start --wait 2m"
+  "postCreateCommand": "astro dev start --wait 3m"
 }
