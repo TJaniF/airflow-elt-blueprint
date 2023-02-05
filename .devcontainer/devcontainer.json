@@ -3,5 +3,5 @@
   "features": {
       "ghcr.io/astronomer/devcontainer-features/astro-cli:1": {}
   },
-  "postCreateCommand": "bash -i -c './.devcontainer/post_create_script.sh'"
+  "postCreateCommand": "chmod 777 './.devcontainer/post_create_script.sh' && bash -i -c './.devcontainer/post_create_script.sh'"
 }
