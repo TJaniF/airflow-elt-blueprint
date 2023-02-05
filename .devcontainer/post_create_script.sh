@@ -6,8 +6,6 @@ docker run -dt                                  \
   -p 9000:9000 -p 9090:9090                     \
   -v PATH:/mnt/data                             \
   -e "MINIO_VOLUMES=/mnt/data"                  \
-  --name "minio_container"                          \
+  --name "minio_local"                          \
   minio server --console-address ":9090"
-chmod 777 ./.devcontainer/duckdb
-./.devcontainer/duckdb
 astro dev start -n
