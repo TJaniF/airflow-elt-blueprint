@@ -8,4 +8,4 @@ docker run -dt                                  \
   -e "MINIO_VOLUMES=/mnt/data"                  \
   --name "minio_local"                          \
   minio server --console-address ":9090"
-astro dev start -n
+astro dev start -n --wait 5m
