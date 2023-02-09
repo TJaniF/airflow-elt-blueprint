@@ -36,8 +36,7 @@ log = logging.getLogger('airflow.task')
     schedule=None,
     catchup=False,
     default_args=default_args,
-    description="ETL pattern",
-    tags=["minio", "duckdb", "streamlit"]
+    description="ETL pattern"
 )
 def DEV_DAG():
 
