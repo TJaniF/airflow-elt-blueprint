@@ -1,4 +1,4 @@
-from airflow.decorators import dag, task 
+from airflow.decorators import dag, task
 from pendulum import datetime, duration
 
 import duckdb
@@ -13,6 +13,7 @@ default_args = {
     'retry_delay': duration(minutes=5)
 }
 
+
 @dag(
     start_date=datetime(2023, 1, 1),
     schedule=[gv.DS_DUCKDB_IN_WEATHER, gv.DS_DUCKDB_IN_CLIMATE],
@@ -26,13 +27,22 @@ def create_reporting_table():
     @task(
         outlets=[gv.DS_DUCKDB_REPORTING]
     )
-    def create_reporting_table():
-        # queries duckdb ingest table and creates a reporting table
-        cursor = duckdb.connect()
-        print(cursor.execute('SELECT 42').fetchall())
-        pass
+    def create_country_reporting():
 
-    create_reporting_table()
+        table_name = f"{gv.MY_COUNTRY}_temp"
+        
+        cursor = duckdb.connect("dwh")
+        cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS {table_name} AS 
+            SELECT *
+            FROM temp_countries_table
+            WHERE country = '{gv.MY_COUNTRY}'
+            """
+        )
+        cursor.commit()
+        cursor.close()
+
+    create_country_reporting()
   
 
 create_reporting_table()

@@ -12,13 +12,13 @@ def TOOL_TEST_DAG():
 
     @task
     def duckdb_testing():
-        cursor = duckdb.connect()
-        print(cursor.execute('SELECT 42').fetchall())
+        cursor = duckdb.connect("dwh")
+        print(cursor.execute('SHOW TABLES;').fetchall())
 
     run_streamlit_test = BashOperator(
         task_id="run_streamlit_test",
         bash_command="streamlit run streamlit_test.py",
-        cwd="include"
+        cwd="include/tool_testing"
     )
 
     duckdb_testing() >> run_streamlit_test

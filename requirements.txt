@@ -2,3 +2,5 @@ duckdb==0.6.1
 streamlit==1.17.0
 geopy==2.3.0
 minio==7.1.13
+airflow-provider-duckdb==0.0.1
+astro-sdk-python==1.5.0

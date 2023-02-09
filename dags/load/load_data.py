@@ -1,6 +1,5 @@
-from airflow.decorators import dag, task_group, task 
+from airflow.decorators import dag, task 
 from pendulum import datetime, duration, parse
-from airflow.operators.empty import EmptyOperator
 
 import duckdb
 import os
@@ -9,6 +8,7 @@ from minio.commonconfig import CopySource
 from minio.deleteobjects import DeleteObject
 
 from include.global_variables import global_variables as gv
+from include.custom_task_groups.create_bucket import CreateBucket
 
 default_args = {
     'owner': gv.MY_NAME,
@@ -26,6 +26,11 @@ default_args = {
     tags=["load", "minio", "duckdb"]
 )
 def load_data():
+
+    create_bucket_tg = CreateBucket(
+        task_id="create_archive_bucket",
+        bucket_name=gv.ARCHIVE_BUCKET_NAME
+    )
 
     @task
     def list_files_climate_bucket():
@@ -52,11 +57,13 @@ def load_data():
 
         table_name = obj.split(".")[0] + "_table"
         
-        cursor = duckdb.connect()
+        cursor = duckdb.connect("dwh")
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {table_name} AS 
             SELECT * FROM read_csv_auto('{obj}');"""
         )
+        cursor.commit()
+        cursor.close()
 
         os.remove(obj)
 
@@ -84,7 +91,7 @@ def load_data():
             file_path=obj
         )
         
-        cursor = duckdb.connect()
+        cursor = duckdb.connect("dwh")
 
         with open(obj, 'r') as f:
             weather_data = json.load(f)
@@ -115,50 +122,10 @@ def load_data():
                     {weathercode}
                 );"""
         )
+        cursor.commit()
+        cursor.close()
 
         os.remove(obj)
-
-    @task_group
-    def bucket_creation():
-        @task
-        def list_buckets_minio():
-            client = gv.get_minio_client()
-            buckets = client.list_buckets()
-            bucket_names = [bucket.name for bucket in buckets]
-            gv.task_log.info(
-                f"MinIO contains the following buckets: {bucket_names}"
-            )
-
-            return bucket_names
-        
-        @task.branch
-        def decide_whether_to_create_bucket(buckets):
-            if gv.ARCHIVE_BUCKET_NAME in buckets:
-                return "bucket_creation.bucket_already_exists"
-            else:
-                return "bucket_creation.create_current_weather_bucket"
-            
-
-        @task
-        def create_current_weather_bucket():
-            client = gv.get_minio_client()
-            client.make_bucket(
-                gv.ARCHIVE_BUCKET_NAME
-            )
-
-        bucket_already_exists = EmptyOperator(
-            task_id="bucket_already_exists"
-        )
-
-        bucket_exists = EmptyOperator(
-            task_id="bucket_exists",
-            trigger_rule="none_failed_min_one_success"
-        )
-
-        # set dependencies within task group
-        branch_task = decide_whether_to_create_bucket(list_buckets_minio())
-        branch_options = [create_current_weather_bucket(), bucket_already_exists]
-        branch_task >> branch_options >> bucket_exists
 
     @task
     def copy_objects_climate_to_archive(objects):
@@ -220,7 +187,10 @@ def load_data():
     weather_data = load_weather_data.partial(city=gv.MY_CITY).expand(
         obj=list_objects_weather
     )
-    archive_bucket = bucket_creation()
+
+    climate_data >> weather_data
+
+    archive_bucket = create_bucket_tg
 
     deletion_args = get_deletion_args(list_objects_weather, list_objects_climate)
 

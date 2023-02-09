@@ -1,6 +1,5 @@
-from airflow.decorators import dag, task_group, task 
+from airflow.decorators import dag, task 
 from pendulum import datetime, duration
-from airflow.operators.empty import EmptyOperator
 
 from geopy.geocoders import Nominatim
 import requests
@@ -8,6 +7,7 @@ import io
 import json
 
 from include.global_variables import global_variables as gv
+from include.custom_task_groups.create_bucket import CreateBucket
 
 default_args = {
     'owner': gv.MY_NAME,
@@ -26,47 +26,10 @@ default_args = {
 )
 def in_local_weather():
 
-    @task_group
-    def bucket_creation():
-        @task
-        def list_buckets_minio():
-            client = gv.get_minio_client()
-            buckets = client.list_buckets()
-            bucket_names = [bucket.name for bucket in buckets]
-            gv.task_log.info(
-                f"MinIO contains the following buckets: {bucket_names}"
-            )
-
-            return bucket_names
-        
-        @task.branch
-        def decide_whether_to_create_bucket(buckets):
-            if gv.WEATHER_BUCKET_NAME in buckets:
-                return "bucket_creation.bucket_already_exists"
-            else:
-                return "bucket_creation.create_current_weather_bucket"
-            
-
-        @task
-        def create_current_weather_bucket():
-            client = gv.get_minio_client()
-            client.make_bucket(
-                gv.WEATHER_BUCKET_NAME
-            )
-
-        bucket_already_exists = EmptyOperator(
-            task_id="bucket_already_exists"
-        )
-
-        bucket_exists = EmptyOperator(
-            task_id="bucket_exists",
-            trigger_rule="none_failed_min_one_success"
-        )
-
-        # set dependencies within task group
-        branch_task = decide_whether_to_create_bucket(list_buckets_minio())
-        branch_options = [create_current_weather_bucket(), bucket_already_exists]
-        branch_task >> branch_options >> bucket_exists
+    create_bucket_tg = CreateBucket(
+        task_id="create_archive_bucket",
+        bucket_name=gv.WEATHER_BUCKET_NAME
+    )
 
     @task
     def get_lat_long_for_city(city):
@@ -144,7 +107,7 @@ def in_local_weather():
 
     coordinates = get_lat_long_for_city(gv.MY_CITY)
     current_weather = get_current_weather(coordinates)
-    bucket_creation() >> write_current_weather_to_minio(current_weather)
+    create_bucket_tg >> write_current_weather_to_minio(current_weather)
 
 
 in_local_weather()

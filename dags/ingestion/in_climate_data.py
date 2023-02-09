@@ -5,6 +5,7 @@ from airflow.operators.empty import EmptyOperator
 import io
 
 from include.global_variables import global_variables as gv
+from include.custom_task_groups.create_bucket import CreateBucket
 
 default_args = {
     'owner': gv.MY_NAME,
@@ -24,47 +25,10 @@ default_args = {
 )
 def in_climate_date():
 
-    @task_group
-    def bucket_creation():
-        @task
-        def list_buckets_minio():
-            client = gv.get_minio_client()
-            buckets = client.list_buckets()
-            bucket_names = [bucket.name for bucket in buckets]
-            gv.task_log.info(
-                f"MinIO contains the following buckets: {bucket_names}"
-            )
-
-            return bucket_names
-        
-        @task.branch
-        def decide_whether_to_create_bucket(buckets):
-            if gv.CLIMATE_BUCKET_NAME in buckets:
-                return "bucket_creation.bucket_already_exists"
-            else:
-                return "bucket_creation.create_current_weather_bucket"
-            
-        @task
-        def create_current_weather_bucket():
-            client = gv.get_minio_client()
-            client.make_bucket(
-                gv.CLIMATE_BUCKET_NAME
-            )
-
-        bucket_already_exists = EmptyOperator(
-            task_id="bucket_already_exists"
-        )
-
-        bucket_exists = EmptyOperator(
-            task_id="bucket_exists",
-            trigger_rule="none_failed_min_one_success"
-        )
-
-        # set dependencies within task group
-        branch_task = decide_whether_to_create_bucket(list_buckets_minio())
-        branch_options = [create_current_weather_bucket(), bucket_already_exists]
-        branch_task >> branch_options >> bucket_exists
-
+    create_bucket_tg = CreateBucket(
+        task_id="create_archive_bucket",
+        bucket_name=gv.CLIMATE_BUCKET_NAME
+    )
    
     @task(
         outlets=[gv.DS_CLIMATE_DATA_MINIO]
@@ -90,7 +54,7 @@ def in_climate_date():
         return source
 
     # set dependencies
-    bucket_creation() >> ingest_climate_data.expand(source=gv.CLIMATE_DATA_SOURCES)
+    create_bucket_tg >> ingest_climate_data.expand(source=gv.CLIMATE_DATA_SOURCES)
 
 
 in_climate_date()

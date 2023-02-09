@@ -24,8 +24,8 @@ def run_streamlit_app():
 
     run_streamlit_script = BashOperator(
         task_id="run_streamlit_script",
-        bash_command="streamlit run streamlit_test.py &",
-        cwd="include"
+        bash_command="streamlit run weather_v_climate_app.py &",
+        cwd="include/streamlit_app"
     )
 
     run_streamlit_script
