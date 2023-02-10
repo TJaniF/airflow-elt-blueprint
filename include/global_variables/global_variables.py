@@ -6,7 +6,7 @@ from minio import Minio
 # ENTER YOU OWN INFO!
 MY_NAME = "Jani"
 MY_CITY = "New York"
-MY_COUNTRY = "US"
+MY_COUNTRY = "United States"
 
 # MinIO connection config
 MINIO_ACCESS_KEY="minioadmin"

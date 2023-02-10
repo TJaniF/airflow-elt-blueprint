@@ -45,7 +45,8 @@ def load_data():
 
 
     @task(
-        outlets=[gv.DS_DUCKDB_IN_CLIMATE]
+        outlets=[gv.DS_DUCKDB_IN_CLIMATE],
+        max_active_tis_per_dag=1
     )
     def load_climate_data(obj):
         minio_client = gv.get_minio_client()
@@ -81,7 +82,8 @@ def load_data():
 
 
     @task(
-        outlets=[gv.DS_DUCKDB_IN_WEATHER]
+        outlets=[gv.DS_DUCKDB_IN_WEATHER],
+        max_active_tis_per_dag=1
     )
     def load_weather_data(city, obj):
         minio_client = gv.get_minio_client()
