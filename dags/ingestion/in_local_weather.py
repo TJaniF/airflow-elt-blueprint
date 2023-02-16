@@ -1,4 +1,5 @@
-from airflow.decorators import dag, task 
+from airflow.decorators import dag, task
+from airflow.models.variable import Variable
 from pendulum import datetime, duration
 
 from geopy.geocoders import Nominatim
@@ -18,11 +19,11 @@ default_args = {
 
 @dag(
     start_date=datetime(2023, 1, 1),
-    schedule=None,
+    schedule=[gv.DS_START],
     catchup=False,
     default_args=default_args,
     description="ETL pattern",
-    tags=["ingestion", "MinIO"]
+    tags=["ingestion", "minio"]
 )
 def in_local_weather():
 
@@ -43,7 +44,11 @@ def in_local_weather():
             f"Coordinates for {city}: {lat}/{long}"
         )
 
-        return {"city": city, "lat": lat, "long": long}
+        city_coordinates = {"city": city, "lat": lat, "long": long}
+
+        Variable.set(key="city_coordinates", value=json.dumps(city_coordinates))
+
+        return city_coordinates
 
     # note: add something to put into the streamlit in case API fails
     @task

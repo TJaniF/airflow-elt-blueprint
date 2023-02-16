@@ -6,27 +6,25 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import sys
+import os
 from datetime import datetime
 import altair as alt
+import json
+
 
 #############
 # VARIABLES #
 #############
 
-country_name = sys.argv[0]
-city_name = sys.argv[1]
-user_name = sys.argv[2]
-
-#### hardcoded input for testing - remove later
-country_name = "United States"
-country_name_no_space = country_name.replace(" ", "_")
-city_name = "New York"
-city_lat = 40.7128
-city_long = -74.0060
-####
+country_name = os.environ["my_country"]
+city_name = os.environ["my_city"]
+city_coordinates = json.loads(os.environ["city_coordinates"])
+city_lat = city_coordinates["lat"]
+city_long = city_coordinates["long"]
+user_name = os.environ["my_name"]
 
 global_temp_col = "Global"
-country_temp_col = "United States"
+country_temp_col = country_name
 metric_col_name = "Average Surface Temperature"
 date_col_name = "dt"
 
@@ -35,8 +33,8 @@ date_col_name = "dt"
 ################
 
 # retrieving and caching data
-@st.cache_data
-def get_data(country, city, db="dwh"):
+#@st.cache_data
+def get_data(country, city, db="/usr/local/airflow/dwh"):
 
     country_name_no_space = country.replace(" ", "_")
 
@@ -54,7 +52,7 @@ def get_data(country, city, db="dwh"):
     city_data = cursor.execute(
         f"""SELECT *
         FROM in_weather
-        WHERE city == '{city}';"""
+        WHERE city == '{city}' ORDER BY TIMESTAMP LIMIT 1;"""
     ).fetchall()
 
     cursor.close()
@@ -140,6 +138,9 @@ df_city = pd.DataFrame(
 #################
 
 st.title("Global Climate and Local Weather")
+
+st.markdown(f"Hello {user_name} :wave: Welcome to your Streamlit App! :blush:")
+
 st.subheader(f"Surface temperatures")
 
 ### Main App ###
