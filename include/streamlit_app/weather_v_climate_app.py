@@ -1,6 +1,10 @@
 import streamlit as st
 import numpy as np
 import time
+import duckdb 
+
+cursor = duckdb.connect("dwh")
+
 
 progress_bar = st.sidebar.progress(0)
 status_text = st.sidebar.empty()
