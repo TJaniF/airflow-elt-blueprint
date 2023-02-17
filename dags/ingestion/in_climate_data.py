@@ -1,36 +1,49 @@
-# package imports
-from airflow.decorators import dag, task 
+"""DAG that loads climate ingests from local csv files into MinIO."""
+
+# --------------- #
+# PACKAGE IMPORTS #
+# --------------- #
+
+from airflow.decorators import dag, task
 from pendulum import datetime
 import io
 
-# local module imports
+# -------------------- #
+# Local module imports #
+# -------------------- #
+
 from include.global_variables import global_variables as gv
 from include.custom_task_groups.create_bucket import CreateBucket
+
+# --- #
+# DAG #
+# --- #
 
 
 @dag(
     start_date=datetime(2023, 1, 1),
+    # this DAG runs as soon as the "start" Dataset has been produced to
     schedule=[gv.DS_START],
     catchup=False,
     default_args=gv.default_args,
-    description="Ingests climate data from provided csv files to MinIO",
+    description="Ingests climate data from provided csv files to MinIO.",
     tags=["ingestion", "minio"]
 )
-def in_climate_date():
+def in_climate_data():
 
-    # create an instance of the CreateBucket task group consisting of 5 tasks 
+    # create an instance of the CreateBucket task group consisting of 5 tasks
     create_bucket_tg = CreateBucket(
-        task_id="create_archive_bucket",
+        task_id="create_climate_bucket",
         bucket_name=gv.CLIMATE_BUCKET_NAME
     )
-   
+
     # dynamically mapped task that will create one task instance for each
     # climate data source file provided
     @task(
         outlets=[gv.DS_CLIMATE_DATA_MINIO],
     )
     def ingest_climate_data(source):
-        """Opens a csv file provided as input and writes the contents to 
+        """Opens a csv file provided as input and writes the contents to
         a bucket in MinIO."""
 
         # use a utility function to connect to MinIO
@@ -50,14 +63,16 @@ def in_climate_date():
             gv.CLIMATE_BUCKET_NAME,
             key,
             bytes_to_write,
-            -1, # -1 = unknown filesize
+            -1,  # -1 = unknown filesize
             part_size=10*1024*1024,
         )
 
         return source
 
     # set dependencies
-    create_bucket_tg >> ingest_climate_data.expand(source=gv.CLIMATE_DATA_SOURCES)
+    create_bucket_tg >> ingest_climate_data.expand(
+        source=gv.CLIMATE_DATA_SOURCES
+    )
 
 
-in_climate_date()
+in_climate_data()

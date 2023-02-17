@@ -1,6 +1,6 @@
-#-----------------#
+# --------------- #
 # PACKAGE IMPORTS #
-#-----------------#
+# --------------- #
 
 import streamlit as st
 import duckdb
@@ -10,9 +10,9 @@ from datetime import datetime
 import altair as alt
 import json
 
-#-----------#
+# --------- #
 # VARIABLES #
-#-----------#
+# --------- #
 
 country_name = os.environ["my_country"]
 city_name = os.environ["my_city"]
@@ -21,7 +21,7 @@ city_lat = city_coordinates["lat"]
 city_long = city_coordinates["long"]
 user_name = os.environ["my_name"]
 
-duck_db_instance_name = "dwh" # when changing this value also change the db name in .env
+duck_db_instance_name = "dwh"  # when changing this value also change the db name in .env
 global_temp_col = "Global"
 country_temp_col = country_name
 metric_col_name = "Average Surface Temperature"
@@ -31,9 +31,10 @@ year_grain_col_name = "Average Surface Temperature per Year"
 quarter_grain_col_name = "Average Surface Temperature per Quarter"
 month_grain_col_name = "Average Surface Temperature per Month"
 
-#--------------#
+# ------------ #
 # GETTING DATA #
-#--------------#
+# ------------ #
+
 
 # retrieving data
 def get_data(country, city, db=f"/usr/local/airflow/{duck_db_instance_name}"):
@@ -66,6 +67,7 @@ def get_data(country, city, db=f"/usr/local/airflow/{duck_db_instance_name}"):
     cursor.close()
 
     return global_data, country_data, city_data
+
 
 global_data, country_data, city_data = get_data(country_name, city_name)
 
@@ -135,6 +137,7 @@ df_city = pd.DataFrame(
     city_data,
     columns=[
         "city",
+        "api_response",
         "dt",
         "temperature",
         "windspeed",
@@ -151,14 +154,14 @@ st.title("Global Climate and Local Weather")
 
 st.markdown(f"Hello {user_name} :wave: Welcome to your Streamlit App! :blush:")
 
-st.subheader(f"Surface temperatures")
+st.subheader("Surface temperatures")
 
 ### Main App ###
 
 ### Climate section
 
 # define columns
-col1, col2, col3= st.columns([3, 1, 1])
+col1, col2, col3 = st.columns([3, 1, 1])
 
 # col 1 contains the time-period slider
 with col1:
@@ -166,7 +169,7 @@ with col1:
     # add slider
     start_time = st.slider(
         "Adjust the time-period shown.",
-        value=(datetime(1760, 1, 1), datetime(2023,1,1)),
+        value=(datetime(1760, 1, 1), datetime(2023, 1, 1)),
         format="YYYY")
 
     # modify the plotted table according to slider input
@@ -196,8 +199,9 @@ with col3:
         "Average temperatures per",
         ("Decade", "Year", "Quarter", "Month"),
         label_visibility="visible",
-        index = 0
+        index=0
     )
+
 
 # get interactive chart
 def get_chart(data, grain):
@@ -256,6 +260,7 @@ def get_chart(data, grain):
 
     return (lines + points + tooltips).interactive()
 
+
 chart = get_chart(df_melt_cut, grain)
 
 # plot climate chart
@@ -266,21 +271,32 @@ st.altair_chart(
 
 ### Weather section
 
-st.subheader(f"Current weather in {city_name}")
+if df_city["api_response"][0] == 200:
 
-# create 3 columns for metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Temperature [°C]", round(df_city['temperature'],1))
-col2.metric("Windspeed [km/h]",  round(df_city["windspeed"],2))
-col3.metric("Winddirection [° clockwise from north]",  df_city["winddirection"])
+    st.subheader(f"Current weather in {city_name}")
 
+    # create 3 columns for metrics
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Temperature [°C]", round(df_city['temperature'], 1))
+    col2.metric("Windspeed [km/h]",  round(df_city["windspeed"], 2))
+    col3.metric(
+        "Winddirection [° clockwise from north]",
+        df_city["winddirection"]
+    )
 
-# plot location of user-defined city
-city_coordinates_df = pd.DataFrame(
-    [(city_lat, city_long)], 
-    columns=['lat', 'lon'])
+    # plot location of user-defined city
+    city_coordinates_df = pd.DataFrame(
+        [(city_lat, city_long)],
+        columns=['lat', 'lon'])
 
-st.map(city_coordinates_df)
+    st.map(city_coordinates_df)
+
+else:
+    st.markdown(
+        f"""Your call to the open weather API returned
+        {df_city['api_response'][0]}.
+        Try running the pipeline again with a different city!"""
+    )
 
 st.success(f"Congratulations, {user_name}, on finishing this tutorial!", icon="🎉")
 
@@ -290,33 +306,37 @@ st.success(f"Congratulations, {user_name}, on finishing this tutorial!", icon="�
 with st.sidebar:
 
     # display logos of tools used with links to their websites as well as attribute data sources
-    st.markdown("""
-    <h2> Tools used </h2>
-        <a href='https://docs.astronomer.io/astro/cli/install-cli', title='Astro CLI by Astronomer'>
-            <img src='https://avatars.githubusercontent.com/u/12449437?s=280&v=4'  width='50' height='50'></a>
-        <a href='https://airflow.apache.org/', title='Apache Airflow'>
-            <img src='https://pbs.twimg.com/media/EFOe7T4X4AEfIyl.jpg'  width='50' height='50'></a>
-        <a href='https://min.io/', title='MinIO'>
-            <img src='https://min.io/resources/img/logo/MINIO_Bird.png'  width='25' height='50'></a>
-        <a href='https://duckdb.org/', title='DuckDB'>
-            <img src='https://duckdb.org/images/favicon/apple-touch-icon.png'  width='50' height='50'></a>
-        <a href='https://streamlit.io/', title='Streamlit'>
-            <img src='https://streamlit.io/images/brand/streamlit-mark-color.svg'  width='50' height='50'></a>
-    </br>
-    </br>
-    <h2> Data sources </h2>
-        <a href='https://open-meteo.com/'> Open Meteo API </a>
+    st.markdown(
+        """
+        <h2> Tools used </h2>
+            <a href='https://docs.astronomer.io/astro/cli/install-cli', title='Astro CLI by Astronomer'>
+                <img src='https://avatars.githubusercontent.com/u/12449437?s=280&v=4'  width='50' height='50'></a>
+            <a href='https://airflow.apache.org/', title='Apache Airflow'>
+                <img src='https://pbs.twimg.com/media/EFOe7T4X4AEfIyl.jpg'  width='50' height='50'></a>
+            <a href='https://min.io/', title='MinIO'>
+                <img src='https://min.io/resources/img/logo/MINIO_Bird.png'  width='25' height='50'></a>
+            <a href='https://duckdb.org/', title='DuckDB'>
+                <img src='https://duckdb.org/images/favicon/apple-touch-icon.png'  width='50' height='50'></a>
+            <a href='https://streamlit.io/', title='Streamlit'>
+                <img src='https://streamlit.io/images/brand/streamlit-mark-color.svg'  width='50' height='50'></a>
         </br>
-        (<a href='https://creativecommons.org/licenses/by/4.0/'>CC BY 4.0</a>)
-    </br>
-    </br>
-        <a href='https://www.kaggle.com/datasets/berkeleyearth/climate-change-earth-surface-temperature-data'> Berkely Earth and Kristen Sissener </a>
         </br>
-        (<a href='https://creativecommons.org/licenses/by-nc-sa/4.0/'>CC BY-NC-SA 4.0</a>)
-    </br>
-    </br>
-    """,
-    # warning: using html in your streamlit app can open you to security risk when writing unsafe html code, see: https://github.com/streamlit/streamlit/issues/152
-    unsafe_allow_html=True)
+        <h2> Data sources </h2>
+            <a href='https://open-meteo.com/'> Open Meteo API </a>
+            </br>
+            (<a href='https://creativecommons.org/licenses/by/4.0/'>CC BY 4.0</a>)
+        </br>
+        </br>
+            <a href='https://www.kaggle.com/datasets/berkeleyearth/climate-change-earth-surface-temperature-data'> Berkely Earth and Kristen Sissener </a>
+            </br>
+            (<a href='https://creativecommons.org/licenses/by-nc-sa/4.0/'>CC BY-NC-SA 4.0</a>)
+        </br>
+        </br>
+        """,
+        # warning: using html in your streamlit app can open you to security
+        # risk when writing unsafe html code,
+        # see: https://github.com/streamlit/streamlit/issues/152
+        unsafe_allow_html=True
+    )
 
     st.button("Re-run")

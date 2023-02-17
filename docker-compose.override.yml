@@ -19,6 +19,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - 8501:8501
+      - 8502:8502
   webserver:
     extra_hosts:
       - "host.docker.internal:host-gateway"

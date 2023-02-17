@@ -1,12 +1,147 @@
 Overview
 ========
 
-Welcome to this hands-on repository to get started with Apache Airflow! :rocket:
+Welcome to this hands-on repository to get started with [Apache Airflow](https://airflow.apache.org/)! :rocket:
 
-This repository contains a fully functional best practice Airflow ETL pipeline. 
+This repository contains a fully functional best practice Airflow ELT pipeline that can be run in GitHub codespaces (or locally with the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli)). 
 
+This Airflow pipeline will:
+- Ingest data from local csv files and a public API into a [MinIO](https://min.io/) container.
+- Load data from MinIO to [DuckDB](https://duckdb.org/).
+- Transform data within DuckDB using the [Astro SDK](https://astro-sdk-python.readthedocs.io/en/stable/index.html).
+- Use a [streamlit](https://streamlit.io/) app to display your data.
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+Use this repository to explore Airflow best practices, experiment with your own DAGs and as a template for your own projects!
+
+This project was created with :heart: by [Astronomer](https://www.astronomer.io/).
+
+-------------------------------
+
+How to use this repository
+==========================
+
+## Setting up
+
+### Option 1: Use GitHub Codespaces
+
+Run this Airflow project without installing anything locally.
+
+1. Fork this repository.
+2. Create a new GitHub codespaces project on your fork. Make sure it uses at least 4 cores!
+
+    ![Fork repo and create a codespaces project](src/fork_and_codespaces.png)
+
+3. After creating the codespaces project the Astro CLI will automatically start up all necessary Airflow components. This can take a few minutes. 
+4. Once the Airflow project has started access the Airflow UI by clicking on the **Ports** tab and opening the forward URL for port 8080.
+
+    ![Open Airflow UI URL Codespaces](src/open_airflow_ui_codespaces.png)
+
+### Option 2: Use the Astro CLI
+
+Download the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli) to run Airflow locally in Docker. `astro` is the only package you will need to install.
+
+1. Run `git clone https://github.com/TJaniF/astronomer-codespaces-test.git` on your computer to create a local clone of this repository.
+2. Install the Astro CLI by following the steps in the [Astro CLI documentation](https://docs.astronomer.io/astro/cli/install-cli). The main prerequisite is Docker Desktop/Docker Engine but no Docker knowledge is needed to run Airflow with the Astro CLI.
+3. Run `astro dev start` in your cloned repository.
+4. After your Astro project has started. View the Airflow UI at `localhost:8080`.
+
+## Run the project
+
+1. Go to `include/global_variables/global_variables.py` and enter your own info for `MY_NAME`, `MY_CITY`, `MY_COUNTRY`. 
+2. Unpause all DAGs, starting top to bottom, by clicking on the toggle on their left hand side. Once the `start` DAG is unpaused it will run once, starting the pipeline. You can also run this DAG manually to trigger further pipeline runs by clicking on the play button on the right side of the DAG. The `TOOL_TEST_DAG` will only run if you manually do so.
+4. Watch the DAGs run according to their dependencies which have been set using [Datasets](https://docs.astronomer.io/learn/airflow-datasets).
+
+    ![Dataset and DAG Dependencies](src/dataset_dag_dependency.png)
+
+5. The last DAG in the pipeline `run_streamlit_app`, will stay in a running state as shown in the screenshot below.
+
+    ![DAGs view after first run](src/click_on_run_streamlit.png)
+
+6. Open the Streamlit app. If you are using codespaces go to the **Ports** tab and open the URL of the forwarded port `8501`. If you are running locally go to `localhost:8501`.
+
+    ![Open Streamlit URL Codespaces](src/open_streamlit_codespaces.png)
+
+7. View the Streamlit app.
+
+    ![Streamlit app](src/streamlit_app.png)
+
+-------------------------------
+
+How it works
+============
+
+## Components and infrastructure
+
+This repository uses a [custom codespaces container](https://github.com/astronomer/devcontainer-features/pkgs/container/devcontainer-features%2Fastro-cli) to install the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli). The GH codespaces post creation command will start up the Astro project by running `astro dev start`. 
+
+5 Docker containers will be created and relevant ports will be forwarded:
+
+- The Airflow scheduler
+- The Airflow webserver
+- The Airflow metastore
+- The Airflow triggerer
+- A MinIO instance
+
+## The Astro project
+
+The Astro project defines a data pipeline using 7 DAGs that depend on each other using the Datasets feature. Datasets can be used to schedule a DAG to run based upon specific tasks finishing in other DAGs. Learn more about how to use Datasets in the [Datasets and data-aware scheduling in Airflow](https://docs.astronomer.io/learn/airflow-datasets) guide.
+Supporting files are located in the `include` folder with the `include/global_variables/global_variables.py` containing the variables names and configurations.
+
+In this section each DAG is explained in more detail.
+
+#### start
+
+![start DAG](src/start_dag.png)
+
+The `start` DAG simply exists for user convenience. Upon unpausing the DAG it will run once and afterwards can be used to manually start a run of the whole Data pipeline. This DAG contains one task using the [EmptyOperator](https://registry.astronomer.io/providers/apache-airflow/modules/emptyoperator) to produce to the `start` Dataset.
+
+This DAG as all DAGs in this project uses the `@dag` decorator from the TaskFlow API. Learn more in [Introduction to Airflow decorators](https://docs.astronomer.io/learn/airflow-decorators).
+
+#### in_climate_data
+
+![in_climate_data DAG](src/in_climate_data_dag.png)
+
+This DAG will use a re-useable task group to create a `climate` bucket in MinIO if such a bucket does not already exist. The task group is instantiated using the `CreateBucket` class in `/include/custom_task_groups/create_bucket.py`. 
+
+Learn more about task groups in the [Airflow task groups](https://docs.astronomer.io/learn/task-groups) guide and more about how to create reuseable task groups in the [Reusable DAG Patterns with TaskGroups](https://www.astronomer.io/events/live/reusable-dag-patterns-with-taskgroups/) webinar.
+
+After preparing the bucket. The DAG uses a dynamically mapped task called `ingest_climate_data` to ingest each file located in `include/climate_data` into MinIO. Dynamic task mapping is an Airflow feature that allows you to adjust the number of tasks used dynamically at runtime. See also the [Create dynamic Airflow tasks](https://docs.astronomer.io/learn/dynamic-tasks) guide.
+
+#### in_local_weather
+
+![in_local_weather DAG](src/in_local_weather_dag.png)
+
+As the `in_climate_data` DAG, this DAG will use the re-useable `CreateBucket` class to instantiate a task group creating a bucket called `weather` in case it does not exist in the MinIO instance already.
+
+In parallel the DAG will convert the city name you provided to coordinates and query an open API to retrieve the current weather for that location. 
+
+The last task in the DAG writes the API response to the MinIO bucket.
+
+This DAG passes information from one task to another using XCom. Learn more about this core Airflow feature in the [Pass data between tasks](https://docs.astronomer.io/learn/airflow-passing-data-between-tasks) guide.
+
+#### load_data
+
+![load_data DAG](src/load_data_dag.png)
+
+This DAG will first retrieve lists of objects in the MinIO weather and climate bucket in order to load the contents of these objects into tables within DuckDB. After this step the `CreateBucket` class is used to create an `archive` bucket where all objects from the `weather` and `climate` bucket are copied into, before they are deleted from their ingestion buckets. This pattern ensures that only recent data is being processed every time the pipeline runs.
+
+#### create_reporting_table
+
+![create_reporting_table DAG](src/create_reporting_table.png)
+
+This DAG uses another Astronomer Open Source project, the [Astro SDK](https://astro-sdk-python.readthedocs.io/en/stable/index.html) to run a transformation statement on data in DuckDB. The result from this transformation statement which selects the records from the climate data pertinent to the country you specified as `MY_COUNTRY` are appended to a newly created reporting table. You can learn more about the Astro SDK in the [Write a DAG with the Astro Python SDK](https://docs.astronomer.io/learn/astro-python-sdk) tutorial. 
+
+#### run_streamlit_app
+
+![run_streamlit_app DAG](src/run_streamlit_app.png)
+
+The last DAG in the pipeline is special in that it will stay in a running state for you to be able to explore the local streamlit app until either you manually mark the DAG as successful or failed or a full hour has passed. The DAG uses the BashOperator to run the streamlit app located at `include/streamlit_app/weather_v_climate.py`. The app pulls information from the data that was loaded and transformed into DuckDB during this pipeline.
+
+#### TOOL_TEST_DAG
+
+This DAG exists as a convenience to test the tools Airflow is connecting to. It will retrieve a list of all buckets from MinIO, a list of all tables in the local DuckDB database and run a self-contained demo streamlit app.
+
+-------------------------------
 
 Project Structure
 ================
@@ -33,6 +168,7 @@ This repository contains the following files and folders:
     - (`minio`): folder that is created upon first start of the Airflow environment containing supporting file for the MinIO instance.
 
 - `plugins`: folder to place Airflow plugins. Empty.
+- `src`: contains images used in this README.
 - `tests`: folder to place pytests running on DAGs in the Airflow instance. Contains default tests.
 - `.dockerignore`: list of files to ignore for Docker.
 - `.env`: environment variables. Contains the definition for the DuckDB connection.
