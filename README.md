@@ -137,6 +137,10 @@ This DAG uses another Astronomer Open Source project, the [Astro SDK](https://as
 
 The last DAG in the pipeline is special in that it will stay in a running state for you to be able to explore the local streamlit app until either you manually mark the DAG as successful or failed or a full hour has passed. The DAG uses the BashOperator to run the streamlit app located at `include/streamlit_app/weather_v_climate.py`. The app pulls information from the data that was loaded and transformed into DuckDB during this pipeline.
 
+#### TOOL_TEST_DAG
+
+This DAG exists as a convenience to test the tools Airflow is connecting to. It will retrieve a list of all buckets from MinIO, a list of all tables in the local DuckDB database and run a self-contained demo streamlit app.
+
 -------------------------------
 
 Project Structure
