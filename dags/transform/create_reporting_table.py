@@ -40,7 +40,7 @@ def create_reporting_table():
     @task 
     def create_country_table(table_name):
         table_name_clean = table_name.replace(" ", "_")
-        cursor = duckdb.connect("dwh")
+        cursor = duckdb.connect(gv.DUCKDB_INSTANCE_NAME)
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {table_name_clean} (
                 dt DATE,
@@ -59,7 +59,7 @@ def create_reporting_table():
     tmp_temp_countries_table = query_climate_data(
         temp_countries_table=Table(
             conn_id="duckdb_default",
-            name="temp_countries_table"
+            name=gv.COUNTRY_CLIMATE_TABLE_NAME
         ),
         country=f"{gv.MY_COUNTRY}"
     )

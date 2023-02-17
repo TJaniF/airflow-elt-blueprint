@@ -1,5 +1,5 @@
-duckdb==0.6.1
-streamlit==1.17.0
+duckdb==0.7.0
+streamlit==1.18.0
 geopy==2.3.0
 minio==7.1.13
 pandas==1.5.3

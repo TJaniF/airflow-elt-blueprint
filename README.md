@@ -1,46 +1,43 @@
 Overview
 ========
 
+Welcome to this hands-on repository to get started with Apache Airflow! :rocket:
+
+This repository contains a fully functional best practice Airflow ETL pipeline. 
+
+
 Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
 
-Project Contents
+Project Structure
 ================
 
-Your Astro project contains the following files and folders:
+This repository contains the following files and folders:
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes an example DAG that runs every 30 minutes and simply prints the current date. It also includes an empty 'my_custom_function' that you can fill out to execute Python code.
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+- `.astro`: files necessary for Astro CLI commands.
+- `.devcontainer`: the GH codespaces configuration.
 
-Deploy Your Project Locally
-===========================
+-  `dags`: all DAGs in your Airflow environment. Files in this folder will be parsed by the Airflow scheduler when looking for DAGs to add to your environment. You can add your own dagfiles in this folder.
+    - `ingestion`: two DAGs performing data ingestion.
+    - `load`: one DAG performing data loading from MinIO to DuckDB.
+    - `report`: one DAG running a streamlit app using data from DuckDB.
+    - `transform`: one DAG using the Astro SDK to transform a table in DuckDB.
+    - `start.py`: a DAG to kick off the pipeline.
+    - `TOOL_TEST_DAG.py`: a DAG to test the connections to DuckDB, MinIO and Streamlit.
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+- `include`: supporting files that will be included in the Airflow environment.
+    - `climate_data`: two csv files containing climate data.
+    - `custom_task_groups`: one python file which contains a class instantiating a task group to create a bucket in MinIO if it does not exist already.
+    - `global_variables`: one python file which contains global variables and utility functions.
+    - `streamlit_app`: one python file defining a Streamlit app using the data in our pipeline.
+    - `tool_testing`: one python file with a demo Streamlit app not dependent on pipeline data for the `TOOL_TEST_DAG`. 
+    - (`minio`): folder that is created upon first start of the Airflow environment containing supporting file for the MinIO instance.
 
-This command will spin up 3 Docker containers on your machine, each for a different Airflow component:
-
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-
-2. Verify that all 3 Docker containers were created by running 'docker ps'.
-
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either stop your existing Docker containers or change the port.
-
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
-
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
-
-Deploy Your Project to Astronomer
-=================================
-
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://docs.astronomer.io/cloud/deploy-code/
-
-Contact
-=======
-
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support team: https://support.astronomer.io/
+- `plugins`: folder to place Airflow plugins. Empty.
+- `tests`: folder to place pytests running on DAGs in the Airflow instance. Contains default tests.
+- `.dockerignore`: list of files to ignore for Docker.
+- `.env`: environment variables. Contains the definition for the DuckDB connection.
+- `.gitignore`: list of files to ignore for git. Note that `.env` is not ignored in this project.
+- `docker-compose.override.yaml`: Docker override adding a MinIO container to this project, as well as forwarding additional ports.
+- `packages.txt`: system-level packages to be installed in the Airflow environment upon building of the Dockerimage.
+- `README.md`: this Readme.
+- `requirements.txt`: python packages to be installed to be used by DAGs upon building of the Dockerimage.

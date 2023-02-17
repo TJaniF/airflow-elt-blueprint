@@ -1,9 +1,9 @@
-from airflow.decorators import dag, task
+from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 from pendulum import datetime, duration
+from airflow.models.variable import Variable
 
 from include.global_variables import global_variables as gv
-
 
 default_args = {
     'owner': gv.MY_NAME,
@@ -25,7 +25,13 @@ def run_streamlit_app():
     run_streamlit_script = BashOperator(
         task_id="run_streamlit_script",
         bash_command="streamlit run weather_v_climate_app.py --server.enableWebsocketCompression=false --server.enableCORS=false",
-        cwd="include/streamlit_app"
+        cwd="include/streamlit_app",
+        env={
+            "city_coordinates" : "{{ var.value.city_coordinates }}", #Variable.get('city_coordinates', default=gv.default_coordinates),
+            "my_city" : gv.MY_CITY,
+            "my_country": gv.MY_COUNTRY,
+            "my_name": gv.MY_NAME
+        }
     )
 
     run_streamlit_script

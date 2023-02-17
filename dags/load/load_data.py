@@ -58,7 +58,7 @@ def load_data():
 
         table_name = obj.split(".")[0] + "_table"
         
-        cursor = duckdb.connect("dwh")
+        cursor = duckdb.connect(gv.DUCKDB_INSTANCE_NAME)
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {table_name} AS 
             SELECT * FROM read_csv_auto('{obj}');"""
@@ -93,7 +93,7 @@ def load_data():
             file_path=obj
         )
         
-        cursor = duckdb.connect("dwh")
+        cursor = duckdb.connect(gv.DUCKDB_INSTANCE_NAME)
 
         with open(obj, 'r') as f:
             weather_data = json.load(f)
