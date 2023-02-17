@@ -13,7 +13,7 @@ How to use this repository
 ### Codespaces
 
 
-![Open Airflow UI URL Codespaces](open_airflow_ui_codespaces.png)
+![Open Airflow UI URL Codespaces](src/open_airflow_ui_codespaces.png)
 
 
 ### With the Astro CLI
@@ -33,15 +33,15 @@ How to use this repository
 
 5. The last DAG in the pipeline `run_streamlit_app`, will stay in a running state as shown in the screenshot below.
 
-![DAGs view after first run](click_on_run_streamlit.png)
+![DAGs view after first run](src/click_on_run_streamlit.png)
 
 6. Open the Streamlit app. If you are using codespaces go to the **Ports** tab and open the URL of the forwarded port `8501`. If you are running locally go to `localhost:8501`.
 
-![Open Streamlit URL Codespaces](open_streamlit_codespaces.png)
+![Open Streamlit URL Codespaces](src/open_streamlit_codespaces.png)
 
 7. View the Streamlit app.
 
-![Streamlit app](streamlit_app.png)
+![Streamlit app](src/streamlit_app.png)
 
 
 How it works
