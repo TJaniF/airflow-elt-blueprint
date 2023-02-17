@@ -15,7 +15,7 @@ Use this repository to explore Airflow best practices, experiment with your own 
 
 This project was created with :heart: by [Astronomer](https://www.astronomer.io/).
 
-> If your are looking for an entry level written tutorial where you build your own DAG from scratch check out: [Get started with Apache Airflow, Part 1: Write and run your first DAG](https://docs.astronomer.io/learn/get-started-with-airflow).
+> If you are looking for an entry level written tutorial where you build your own DAG from scratch check out: [Get started with Apache Airflow, Part 1: Write and run your first DAG](https://docs.astronomer.io/learn/get-started-with-airflow).
 
 -------------------------------
 
