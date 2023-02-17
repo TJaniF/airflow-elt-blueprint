@@ -1,40 +1,55 @@
+"""DAG that runs a streamlit app."""
+
+# --------------- #
+# PACKAGE IMPORTS #
+# --------------- #
+
 from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 from pendulum import datetime, duration
-from airflow.models.variable import Variable
+
+# -------------------- #
+# Local module imports #
+# -------------------- #
 
 from include.global_variables import global_variables as gv
 
-default_args = {
-    'owner': gv.MY_NAME,
-    'depends_on_past': False,
-    'retries': 2,
-    'retry_delay': duration(minutes=5)
-}
+# --- #
+# DAG #
+# --- #
+
 
 @dag(
     start_date=datetime(2023, 1, 1),
     schedule=[gv.DS_DUCKDB_REPORTING],
     catchup=False,
-    default_args=default_args,
-    description="ETL pattern",
+    default_args=gv.default_args,
+    # this DAG will time out after one hour
+    dagrun_timeout=duration(hours=1),
+    description="Runs a streamlit app.",
     tags=["reporting", "streamlit"]
 )
 def run_streamlit_app():
 
+    # run the streamlit app contained in the include folder
     run_streamlit_script = BashOperator(
         task_id="run_streamlit_script",
-        bash_command="streamlit run weather_v_climate_app.py --server.enableWebsocketCompression=false --server.enableCORS=false",
+        # retrieve the command from the global variables file
+        bash_command=gv.STREAMLIT_COMMAND,
+        # provide the directory to run the bash command in
         cwd="include/streamlit_app",
+        # add environment variables
         env={
-            "city_coordinates" : "{{ var.value.city_coordinates }}", #Variable.get('city_coordinates', default=gv.default_coordinates),
-            "my_city" : gv.MY_CITY,
+            # city coordinates are retrieved from an Airflow Variable
+            "city_coordinates": "{{ var.value.city_coordinates }}",
+            # additional variables are retrieved from a local module
+            "my_city": gv.MY_CITY,
             "my_country": gv.MY_COUNTRY,
             "my_name": gv.MY_NAME
         }
     )
 
     run_streamlit_script
-  
+
 
 run_streamlit_app()

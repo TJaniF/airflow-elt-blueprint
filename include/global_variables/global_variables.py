@@ -1,6 +1,6 @@
-#-----------------#
+# --------------- #
 # PACKAGE IMPORTS #
-#-----------------#
+# --------------- #
 
 from airflow import Dataset
 import logging
@@ -9,22 +9,22 @@ from minio import Minio
 from pendulum import duration
 import json
 
-#----------------------#
+# -------------------- #
 # Enter your own info! #
-#----------------------#
+# -------------------- #
 
 MY_NAME = "Jani"
-MY_CITY = "New York"
+MY_CITY = "sgahbrlgjdabgj"
 MY_COUNTRY = "United States"
 
-#-------------------------#
+# ----------------------- #
 # Configuration variables #
-#-------------------------#
+# ----------------------- #
 
 # MinIO connection config
-MINIO_ACCESS_KEY="minioadmin"
-MINIO_SECRET_KEY="minioadmin"
-MINIO_IP="host.docker.internal:9000"
+MINIO_ACCESS_KEY = "minioadmin"
+MINIO_SECRET_KEY = "minioadmin"
+MINIO_IP = "host.docker.internal:9000"
 WEATHER_BUCKET_NAME = "weather"
 CLIMATE_BUCKET_NAME = "climate"
 ARCHIVE_BUCKET_NAME = "archive"
@@ -67,6 +67,7 @@ default_coordinates = {
     "long": 0
 }
 
+
 # utility functions
 def get_minio_client():
     client = Minio(
@@ -77,3 +78,8 @@ def get_minio_client():
     )
 
     return client
+
+
+# command to run streamlit app within codespaces/docker
+# modifications are necessary to support double-port-forwarding
+STREAMLIT_COMMAND = "streamlit run weather_v_climate_app.py --server.enableWebsocketCompression=false --server.enableCORS=false"

@@ -1,13 +1,30 @@
+"""DAG to test MinIO, DuckDB, Streamlit."""
+
+# --------------- #
+# PACKAGE IMPORTS #
+# --------------- #
+
 import duckdb
-from airflow.decorators import dag, task 
+from airflow.decorators import dag, task
 from pendulum import datetime
 from airflow.operators.bash import BashOperator
 
+# -------------------- #
+# Local module imports #
+# -------------------- #
+
 from include.global_variables import global_variables as gv
+
+# --- #
+# DAG #
+# --- #
+
 
 @dag(
     start_date=datetime(2023, 1, 1),
     schedule=None,
+    description="Use to test MinIO, DuckDB, Streamlit.",
+    tags=["minio", "duckdb", "streamlit"],
     catchup=False
 )
 def TOOL_TEST_DAG():
@@ -36,7 +53,7 @@ def TOOL_TEST_DAG():
 
         return table_names
 
-
+    # run a self-contained streamlit app
     run_streamlit_test = BashOperator(
         task_id="run_streamlit_test",
         bash_command="streamlit run streamlit_test.py",
@@ -44,5 +61,6 @@ def TOOL_TEST_DAG():
     )
 
     minio_testing() >> duckdb_testing() >> run_streamlit_test
+
 
 TOOL_TEST_DAG()
