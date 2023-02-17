@@ -3,10 +3,51 @@ Overview
 
 Welcome to this hands-on repository to get started with Apache Airflow! :rocket:
 
-This repository contains a fully functional best practice Airflow ETL pipeline. 
+This repository contains a fully functional best practice Airflow ETL pipeline that can be run in GitHub codespaces (or locally with the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli)). You can use it to explore Apache Airflow best practices or as a template to build your own pipeline! 
+
+How to use this repository
+==========================
+
+## Setting up
+
+### Codespaces
 
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+![Open Airflow UI URL Codespaces](open_airflow_ui_codespaces.png)
+
+
+### With the Astro CLI
+
+1. Run `git clone https://github.com/TJaniF/astronomer-codespaces-test.git` on your computer to create a local clone of this repository.
+2. Install the Astro CLI by following the steps in the [Astro CLI documentation](https://docs.astronomer.io/astro/cli/install-cli).
+3. Run `astro dev start` in your cloned repository.
+4. After your Astro project has started. View the Airflow UI at `localhost:8080`.
+
+## Run the project
+
+1. Go to `include/global_variables/global_variables.py` and enter your own info for `MY_NAME`, `MY_CITY`, `MY_COUNTRY`. 
+2. Unpause all DAGs by clicking on the toggle on their left hand side. Once the `start` DAG is unpaused it will run once, starting the pipeline. You can also run this DAG manually to trigger further pipeline runs by clicking on the play button on the right side of the DAG.
+4. Watch the DAGs run according to their dependencies which have been set using [Datasets](https://docs.astronomer.io/learn/airflow-datasets).
+
+![Dataset and DAG Dependencies](src/dataset_dag_dependency.png)
+
+5. The last DAG in the pipeline `run_streamlit_app`, will stay in a running state as shown in the screenshot below.
+
+![DAGs view after first run](click_on_run_streamlit.png)
+
+6. Open the Streamlit app. If you are using codespaces go to the **Ports** tab and open the URL of the forwarded port `8501`. If you are running locally go to `localhost:8501`.
+
+![Open Streamlit URL Codespaces](open_streamlit_codespaces.png)
+
+7. View the Streamlit app.
+
+![Streamlit app](streamlit_app.png)
+
+
+How it works
+============
+
+
 
 Project Structure
 ================
@@ -33,6 +74,7 @@ This repository contains the following files and folders:
     - (`minio`): folder that is created upon first start of the Airflow environment containing supporting file for the MinIO instance.
 
 - `plugins`: folder to place Airflow plugins. Empty.
+- `src`: contains images used in this README.
 - `tests`: folder to place pytests running on DAGs in the Airflow instance. Contains default tests.
 - `.dockerignore`: list of files to ignore for Docker.
 - `.env`: environment variables. Contains the definition for the DuckDB connection.

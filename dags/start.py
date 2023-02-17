@@ -8,7 +8,7 @@ from include.global_variables import global_variables as gv
 
 @dag(
     start_date=datetime(2023, 1, 1),
-    schedule="@daily",
+    schedule="@once",
     catchup=False,
     default_args=gv.default_args,
     description="Run this DAG to kick off the pipeline!",

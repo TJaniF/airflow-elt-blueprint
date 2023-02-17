@@ -1,3 +1,7 @@
+#-----------------#
+# PACKAGE IMPORTS #
+#-----------------#
+
 from airflow import Dataset
 import logging
 import os
@@ -5,10 +9,17 @@ from minio import Minio
 from pendulum import duration
 import json
 
-# ENTER YOU OWN INFO!
+#----------------------#
+# Enter your own info! #
+#----------------------#
+
 MY_NAME = "Jani"
-MY_CITY = "Basel"
-MY_COUNTRY = "Switzerland"
+MY_CITY = "New York"
+MY_COUNTRY = "United States"
+
+#-------------------------#
+# Configuration variables #
+#-------------------------#
 
 # MinIO connection config
 MINIO_ACCESS_KEY="minioadmin"
