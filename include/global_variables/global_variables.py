@@ -14,8 +14,8 @@ import json
 # -------------------- #
 
 MY_NAME = "Jani"
-MY_CITY = "sgahbrlgjdabgj"
-MY_COUNTRY = "United States"
+MY_CITY = "Bern"
+MY_COUNTRY = "Switzerland"
 
 # ----------------------- #
 # Configuration variables #
