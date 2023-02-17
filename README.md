@@ -99,7 +99,7 @@ This DAG as all DAGs in this project uses the `@dag` decorator from the TaskFlow
 
 #### in_climate_data
 
-![in_climate_data DAG](src/ingest_climate_data_dag.png)
+![in_climate_data DAG](src/in_climate_data_dag.png)
 
 This DAG will use a re-useable task group to create a `climate` bucket in MinIO if such a bucket does not already exist. The task group is instantiated using the `CreateBucket` class in `/include/custom_task_groups/create_bucket.py`. 
 
@@ -121,7 +121,7 @@ This DAG passes information from one task to another using XCom. Learn more abou
 
 #### load_data
 
-![load_data DAG](src/load_data.png)
+![load_data DAG](src/load_data_dag.png)
 
 This DAG will first retrieve lists of objects in the MinIO weather and climate bucket in order to load the contents of these objects into tables within DuckDB. After this step the `CreateBucket` class is used to create an `archive` bucket where all objects from the `weather` and `climate` bucket are copied into, before they are deleted from their ingestion buckets. This pattern ensures that only recent data is being processed every time the pipeline runs.
 
