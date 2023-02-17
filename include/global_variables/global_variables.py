@@ -3,6 +3,7 @@ import logging
 import os
 from minio import Minio
 from pendulum import duration
+import json
 
 # ENTER YOU OWN INFO!
 MY_NAME = "Jani"
@@ -32,7 +33,10 @@ DS_DUCKDB_REPORTING = Dataset("duckdb://reporting")
 DS_START = Dataset("start")
 
 # DuckDB config
+DUCKDB_INSTANCE_NAME = json.loads(os.environ["AIRFLOW_CONN_DUCKDB_DEFAULT"])["host"]
 WEATHER_IN_TABLE_NAME = "in_weather"
+COUNTRY_CLIMATE_TABLE_NAME = "temp_country_table"
+REPORTING_TABLE_NAME = "reporting_table"
 
 # get Airflow task logger
 task_log = logging.getLogger('airflow.task')
@@ -43,6 +47,13 @@ default_args = {
     'depends_on_past': False,
     'retries': 2,
     'retry_delay': duration(minutes=5)
+}
+
+# default coordinates
+default_coordinates = {
+    "city": "No city provided",
+    "lat": 0,
+    "long": 0
 }
 
 # utility functions

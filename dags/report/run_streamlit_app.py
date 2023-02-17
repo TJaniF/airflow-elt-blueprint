@@ -27,7 +27,7 @@ def run_streamlit_app():
         bash_command="streamlit run weather_v_climate_app.py --server.enableWebsocketCompression=false --server.enableCORS=false",
         cwd="include/streamlit_app",
         env={
-            "city_coordinates" : Variable.get('city_coordinates'),
+            "city_coordinates" : "{{ var.value.city_coordinates }}", #Variable.get('city_coordinates', default=gv.default_coordinates),
             "my_city" : gv.MY_CITY,
             "my_country": gv.MY_COUNTRY,
             "my_name": gv.MY_NAME
