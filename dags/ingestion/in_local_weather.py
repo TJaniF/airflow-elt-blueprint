@@ -8,6 +8,7 @@ from airflow.decorators import dag, task
 from airflow.models.variable import Variable
 from pendulum import datetime
 from geopy.geocoders import Nominatim
+from geopy.adapters import AdapterHTTPError
 import requests
 import io
 import json
@@ -59,9 +60,10 @@ def in_local_weather():
             )
 
         # if the coordinates cannot be retrieved log a warning
-        except AttributeError:
+        except (AttributeError, KeyError, ValueError, AdapterHTTPError) as err:
             gv.task_log.warn(
-                f"Coordinates for {city}: could not be retrieved."
+                f"""Coordinates for {city}: could not be retrieved.
+                Error: {err}"""
             )
             lat = "NA"
             long = "NA"
