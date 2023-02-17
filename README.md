@@ -3,7 +3,19 @@ Overview
 
 Welcome to this hands-on repository to get started with Apache Airflow! :rocket:
 
-This repository contains a fully functional best practice Airflow ETL pipeline that can be run in GitHub codespaces (or locally with the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli)). You can use it to explore Apache Airflow best practices or as a template to build your own pipeline! 
+This repository contains a fully functional best practice Airflow ETL pipeline that can be run in GitHub codespaces (or locally with the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli)). 
+
+This Airflow pipeline will:
+- Ingest data from local csv files and a public API into a [MinIO](https://min.io/) container.
+- Load data from MinIO to [DuckDB](https://duckdb.org/).
+- Transform data within DuckDB using the [Astro SDK](https://astro-sdk-python.readthedocs.io/en/stable/index.html).
+- Use a [streamlit](https://streamlit.io/) app to display your data.
+
+Use this repository to explore Airflow best practices, experiment with your own DAGs and as a template for your own projects!
+
+This project was created with :heart: by [Astronomer](https://www.astronomer.io/).
+
+-------------------------------
 
 How to use this repository
 ==========================
@@ -55,11 +67,14 @@ Download the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli) to ru
 
 ![Streamlit app](src/streamlit_app.png)
 
+-------------------------------
 
 How it works
 ============
 
 
+
+-------------------------------
 
 Project Structure
 ================
