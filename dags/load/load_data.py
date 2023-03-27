@@ -9,8 +9,6 @@ from pendulum import datetime, parse
 import duckdb
 import os
 import json
-from minio.commonconfig import CopySource
-from minio.deleteobjects import DeleteObject
 
 # -------------------- #
 # Local module imports #
@@ -18,6 +16,11 @@ from minio.deleteobjects import DeleteObject
 
 from include.global_variables import global_variables as gv
 from include.custom_task_groups.create_bucket import CreateBucket
+from include.custom_operators.minio import (
+    MinIOListOperator,
+    MinIOCopyObjectOperator,
+    MinIODeleteObjectsOperator,
+)
 
 # --- #
 # DAG #
@@ -31,46 +34,29 @@ from include.custom_task_groups.create_bucket import CreateBucket
     catchup=False,
     default_args=gv.default_args,
     description="Loads climate and weather data from MinIO to DuckDB.",
-    tags=["load", "minio", "duckdb"]
+    tags=["load", "minio", "duckdb"],
+    # render Jinja templates as native objects (e.g. dictionary) instead of strings
+    render_template_as_native_obj=True,
 )
 def load_data():
 
     # create an instance of the CreateBucket task group consisting of 5 tasks
     create_bucket_tg = CreateBucket(
-        task_id="create_archive_bucket",
-        bucket_name=gv.ARCHIVE_BUCKET_NAME
+        task_id="create_archive_bucket", bucket_name=gv.ARCHIVE_BUCKET_NAME
     )
 
-    @task
-    def list_files_climate_bucket():
-        """Lists files currently in th the MinIO climate bucket."""
-
-        client = gv.get_minio_client()
-        objects = client.list_objects(
-            gv.CLIMATE_BUCKET_NAME,
-        )
-        objects_list = [obj.object_name for obj in objects]
-        gv.task_log.info(f"{gv.CLIMATE_BUCKET_NAME} contains {objects_list}")
-
-        return objects_list
-
-    @task(
-        outlets=[gv.DS_DUCKDB_IN_CLIMATE],
-        # only run one mapped task instance at once to prevent parallel
-        # calls to DuckDB
-        max_active_tis_per_dag=1
+    list_files_climate_bucket = MinIOListOperator(
+        task_id="list_files_climate_bucket", bucket_name=gv.CLIMATE_BUCKET_NAME
     )
+
+    @task(outlets=[gv.DS_DUCKDB_IN_CLIMATE], pool="duckdb")
     def load_climate_data(obj):
         """Loads content of one fileobject in the MinIO climate bucket
         to DuckDB."""
 
         # get the object from MinIO and save as a local tmp csv file
         minio_client = gv.get_minio_client()
-        minio_client.fget_object(
-            gv.CLIMATE_BUCKET_NAME,
-            obj,
-            file_path=obj
-        )
+        minio_client.fget_object(gv.CLIMATE_BUCKET_NAME, obj, file_path=obj)
 
         # derive table name from object name
         table_name = obj.split(".")[0] + "_table"
@@ -87,46 +73,28 @@ def load_data():
         # delete local tmp csv file
         os.remove(obj)
 
-    @task
-    def list_files_weather_bucket(city):
-        """Lists files currently in th the MinIO weather bucket."""
-
-        client = gv.get_minio_client()
-        objects = client.list_objects(
-            gv.WEATHER_BUCKET_NAME,
-            prefix=city + "/"
-        )
-        objects_list = [obj.object_name for obj in objects]
-        gv.task_log.info(f"{gv.WEATHER_BUCKET_NAME} contains {objects_list}")
-
-        return objects_list
-
-    @task(
-        outlets=[gv.DS_DUCKDB_IN_WEATHER],
-        max_active_tis_per_dag=1
+    list_files_weather_bucket = MinIOListOperator(
+        task_id="list_files_weather_bucket", bucket_name=gv.WEATHER_BUCKET_NAME
     )
+
+    @task(outlets=[gv.DS_DUCKDB_IN_WEATHER], pool="duckdb")
     def load_weather_data(city, obj):
         """Loads content of one fileobject in the MinIO weather bucket
         to DuckDB."""
 
         minio_client = gv.get_minio_client()
-        # get the object from MinIO and save as a local tmp json file
-        minio_client.fget_object(
-            gv.WEATHER_BUCKET_NAME,
-            obj,
-            file_path=obj
-        )
+        # get the object from MinIO and save as a local tmp file
+        minio_client.fget_object(gv.WEATHER_BUCKET_NAME, obj, file_path=obj)
 
         cursor = duckdb.connect(gv.DUCKDB_INSTANCE_NAME)
 
-        # open the local tmp json file to extract information
-        with open(obj, 'r') as f:
+        # open the local tmp file to extract information
+        with open(obj) as f:
             weather_data = json.load(f)
+            print(weather_data)
             city = weather_data["city"]
             api_response = weather_data["API_response"]
-            timestamp = weather_data["current_weather"]["time"].replace(
-                "T", " "
-            )
+            timestamp = weather_data["current_weather"]["time"].replace("T", " ")
             timestamp = parse(timestamp)
             temperature = weather_data["current_weather"]["temperature"]
             windspeed = weather_data["current_weather"]["windspeed"]
@@ -162,85 +130,59 @@ def load_data():
         os.remove(obj)
 
     @task
-    def copy_objects_climate_to_archive(objects):
-        """Copy objects from the climate bucket to the archive bucket
-        in MinIO."""
+    def get_copy_args(obj_list_weather, obj_list_climate):
+        """Return tuples with bucket names and bucket contents."""
 
-        client = gv.get_minio_client()
-        copy_sources = [
-            CopySource(gv.CLIMATE_BUCKET_NAME, obj) for obj in objects
+        return [
+            {
+                "source_bucket_name": gv.WEATHER_BUCKET_NAME,
+                "source_object_names": obj_list_weather,
+                "dest_object_names": obj_list_weather,
+            },
+            {
+                "source_bucket_name": gv.CLIMATE_BUCKET_NAME,
+                "source_object_names": obj_list_climate,
+                "dest_object_names": obj_list_climate,
+            },
         ]
-        for obj, copy_source in zip(objects, copy_sources):
-            client.copy_object(
-                gv.ARCHIVE_BUCKET_NAME,
-                obj,
-                copy_source
-            )
 
-    @task
-    def copy_objects_weather_to_archive(objects):
-        """Copy objects from the weather bucket to the archive bucket
-        in MinIO."""
-
-        client = gv.get_minio_client()
-        copy_sources = [
-            CopySource(gv.WEATHER_BUCKET_NAME, obj) for obj in objects
-        ]
-        for obj, copy_source in zip(objects, copy_sources):
-            client.copy_object(
-                gv.ARCHIVE_BUCKET_NAME,
-                obj,
-                copy_source
-            )
+    copy_objects_to_archive = MinIOCopyObjectOperator.partial(
+        task_id="copy_objects_to_archive",
+        dest_bucket_name=gv.ARCHIVE_BUCKET_NAME,
+    ).expand_kwargs(
+        get_copy_args(
+            list_files_weather_bucket.output, list_files_climate_bucket.output
+        )
+    )
 
     @task
     def get_deletion_args(obj_list_weather, obj_list_climate):
         """Return tuples with bucket names and bucket contents."""
 
         return [
-            (gv.WEATHER_BUCKET_NAME, obj_list_weather),
-            (gv.CLIMATE_BUCKET_NAME, obj_list_climate)
+            {"bucket_name": gv.WEATHER_BUCKET_NAME, "object_names": obj_list_weather},
+            {"bucket_name": gv.CLIMATE_BUCKET_NAME, "object_names": obj_list_climate},
         ]
 
-    @task
-    def delete_objects(deletion_args):
-        """Delete all objects in the climate and weather bucket."""
-
-        bucket_name = deletion_args[0]
-        obj_list = deletion_args[1]
-        delete_obj_list = [DeleteObject(obj) for obj in obj_list]
-        client = gv.get_minio_client()
-
-        errors = client.remove_objects(
-            bucket_name,
-            delete_obj_list,
-            bypass_governance_mode=True
+    delete_objects = MinIODeleteObjectsOperator.partial(
+        task_id="delete_objects",
+    ).expand_kwargs(
+        get_deletion_args(
+            list_files_weather_bucket.output, list_files_climate_bucket.output
         )
-
-        for error in errors:
-            print("error occurred when deleting object", error)
+    )
 
     # set dependencies
-    list_objects_climate = list_files_climate_bucket()
-    list_objects_weather = list_files_weather_bucket(gv.MY_CITY)
 
-    climate_data = load_climate_data.expand(obj=list_objects_climate)
+    climate_data = load_climate_data.expand(obj=list_files_climate_bucket.output)
     weather_data = load_weather_data.partial(city=gv.MY_CITY).expand(
-        obj=list_objects_weather
+        obj=list_files_weather_bucket.output
     )
-
-    climate_data >> weather_data
+    
     archive_bucket = create_bucket_tg
-    deletion_args = get_deletion_args(
-        list_objects_weather,
-        list_objects_climate
-    )
 
     [climate_data, weather_data] >> archive_bucket
-    archive_bucket >> [
-        copy_objects_climate_to_archive(list_objects_climate),
-        copy_objects_weather_to_archive(list_objects_weather)
-    ] >> delete_objects.expand(deletion_args=deletion_args)
+    (archive_bucket >> [copy_objects_to_archive] >> delete_objects)
 
 
 load_data()

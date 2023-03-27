@@ -1,11 +1,11 @@
-"""DAG that kicks off the pipeline by producing to the start dataset."""
+"""DAG that creates the duckdb pool and kicks off the pipeline by producing to the start dataset."""
 
 # --------------- #
 # PACKAGE IMPORTS #
 # --------------- #
 
 from airflow.decorators import dag
-from airflow.operators.empty import EmptyOperator
+from airflow.operators.bash import BashOperator
 from pendulum import datetime
 
 # -------------------- #
@@ -27,17 +27,15 @@ from include.global_variables import global_variables as gv
     catchup=False,
     default_args=gv.default_args,
     description="Run this DAG to kick off the pipeline!",
-    tags=["start"]
+    tags=["start"],
 )
 def start():
 
-    # empty task which produces to the "start" Dataset to kick off the pipeline
-    start_task = EmptyOperator(
-        task_id="start",
-        outlets=[gv.DS_START]
+    create_duckdb_pool = BashOperator(
+        task_id="create_duckdb_pool",
+        bash_command="airflow pools list | grep -q 'duckdb' || airflow pools set duckdb 1 'Pool for duckdb'",
+        outlets=[gv.DS_START],
     )
-
-    start_task
 
 
 # when using the @dag decorator, the decorated function needs to be
