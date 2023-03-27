@@ -11,7 +11,7 @@ This Airflow pipeline will:
 - Transform data within DuckDB using the [Astro SDK](https://astro-sdk-python.readthedocs.io/en/stable/index.html).
 - Use a [streamlit](https://streamlit.io/) app to display your data.
 
-Use this repository to explore Airflow best practices, experiment with your own DAGs and as a template for your own projects!
+Use this repository to explore Airflow, experiment with your own DAGs and as a template for your own projects, as well as your own custom operators and task groups!
 
 This project was created with :heart: by [Astronomer](https://www.astronomer.io/).
 
@@ -49,7 +49,7 @@ Download the [Astro CLI](https://docs.astronomer.io/astro/cli/install-cli) to ru
 
 ## Run the project
 
-1. Go to `include/global_variables/global_variables.py` and enter your own info for `MY_NAME`, `MY_CITY`, `MY_COUNTRY`. 
+1. Go to `include/global_variables/global_variables.py` and enter your own info for `MY_NAME` and `MY_CITY`.
 2. Unpause all DAGs, starting top to bottom, by clicking on the toggle on their left hand side. Once the `start` DAG is unpaused it will run once, starting the pipeline. You can also run this DAG manually to trigger further pipeline runs by clicking on the play button on the right side of the DAG. The `TOOL_TEST_DAG` will only run if you manually do so.
 4. Watch the DAGs run according to their dependencies which have been set using [Datasets](https://docs.astronomer.io/learn/airflow-datasets).
 
@@ -163,6 +163,7 @@ This repository contains the following files and folders:
 
 - `include`: supporting files that will be included in the Airflow environment.
     - `climate_data`: two csv files containing climate data.
+    - `custom_operators`: a folder containing one Python file with several custom operators to interact with MinIO.
     - `custom_task_groups`: one python file which contains a class instantiating a task group to create a bucket in MinIO if it does not exist already.
     - `global_variables`: one python file which contains global variables and utility functions.
     - `streamlit_app`: one python file defining a Streamlit app using the data in our pipeline.

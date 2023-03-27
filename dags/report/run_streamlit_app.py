@@ -44,7 +44,6 @@ def run_streamlit_app():
             "city_coordinates": "{{ var.value.city_coordinates }}",
             # additional variables are retrieved from a local module
             "my_city": gv.MY_CITY,
-            "my_country": gv.MY_COUNTRY,
             "my_name": gv.MY_NAME
         }
     )

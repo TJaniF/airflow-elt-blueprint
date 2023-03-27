@@ -1,5 +1,5 @@
 # --------------- #
-# PACKAGE IMPORTS #
+# PACKAGE IMPORTS #
 # --------------- #
 
 from airflow import Dataset
@@ -10,15 +10,14 @@ from pendulum import duration
 import json
 
 # -------------------- #
-# Enter your own info! #
+# Enter your own info! #
 # -------------------- #
 
-MY_NAME = "Jani"
-MY_CITY = "Bern"
-MY_COUNTRY = "Switzerland"
+MY_NAME = "Friend"
+MY_CITY = "Portland"
 
 # ----------------------- #
-# Configuration variables #
+# Configuration variables #
 # ----------------------- #
 
 # MinIO connection config
@@ -29,11 +28,8 @@ WEATHER_BUCKET_NAME = "weather"
 CLIMATE_BUCKET_NAME = "climate"
 ARCHIVE_BUCKET_NAME = "archive"
 
-# Source files climate data
-CLIMATE_DATA_SOURCES = [
-    f"{os.environ['AIRFLOW_HOME']}/include/climate_data/temp_country.csv",
-    f"{os.environ['AIRFLOW_HOME']}/include/climate_data/temp_global.csv"
-]
+# Source file path climate data
+TEMP_GLOBAL_PATH = f"{os.environ['AIRFLOW_HOME']}/include/climate_data/temp_global.csv"
 
 # Datasets
 DS_CLIMATE_DATA_MINIO = Dataset(f"minio://{CLIMATE_BUCKET_NAME}")
@@ -46,36 +42,28 @@ DS_START = Dataset("start")
 # DuckDB config
 DUCKDB_INSTANCE_NAME = json.loads(os.environ["AIRFLOW_CONN_DUCKDB_DEFAULT"])["host"]
 WEATHER_IN_TABLE_NAME = "in_weather"
-COUNTRY_CLIMATE_TABLE_NAME = "temp_country_table"
+CLIMATE_TABLE_NAME = "temp_global_table"
 REPORTING_TABLE_NAME = "reporting_table"
+CONN_ID_DUCKDB = "duckdb_default"
 
 # get Airflow task logger
-task_log = logging.getLogger('airflow.task')
+task_log = logging.getLogger("airflow.task")
 
 # DAG default arguments
 default_args = {
-    'owner': MY_NAME,
-    'depends_on_past': False,
-    'retries': 2,
-    'retry_delay': duration(minutes=5)
+    "owner": MY_NAME,
+    "depends_on_past": False,
+    "retries": 2,
+    "retry_delay": duration(minutes=5),
 }
 
 # default coordinates
-default_coordinates = {
-    "city": "No city provided",
-    "lat": 0,
-    "long": 0
-}
+default_coordinates = {"city": "No city provided", "lat": 0, "long": 0}
 
 
 # utility functions
 def get_minio_client():
-    client = Minio(
-        MINIO_IP,
-        MINIO_ACCESS_KEY,
-        MINIO_SECRET_KEY,
-        secure=False
-    )
+    client = Minio(MINIO_IP, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, secure=False)
 
     return client
 
