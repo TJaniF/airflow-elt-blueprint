@@ -32,7 +32,7 @@ from include.global_variables import global_variables as gv
 def start():
 
     create_duckdb_pool = BashOperator(
-        task_id="bash_task",
+        task_id="create_duckdb_pool",
         bash_command="airflow pools list | grep -q 'duckdb' || airflow pools set duckdb 1 'Pool for duckdb'",
         outlets=[gv.DS_START],
     )

@@ -178,8 +178,7 @@ def load_data():
     weather_data = load_weather_data.partial(city=gv.MY_CITY).expand(
         obj=list_files_weather_bucket.output
     )
-
-    climate_data >> weather_data
+    
     archive_bucket = create_bucket_tg
 
     [climate_data, weather_data] >> archive_bucket

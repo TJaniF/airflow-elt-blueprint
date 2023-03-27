@@ -46,7 +46,7 @@ def create_global_climate_reporting_table(
 @dag(
     start_date=datetime(2023, 1, 1),
     # this DAG runs as soon as the climate and weather data is ready in DuckDB
-    schedule=[gv.DS_DUCKDB_IN_CLIMATE],
+    schedule=[gv.DS_DUCKDB_IN_CLIMATE, gv.DS_DUCKDB_IN_WEATHER],
     catchup=False,
     default_args=gv.default_args,
     description="Runs a transformation on climate data in DuckDB.",

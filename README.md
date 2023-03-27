@@ -95,7 +95,7 @@ In this section each DAG is explained in more detail.
 
 ![start DAG](src/start_dag.png)
 
-The `start` DAG simply exists for user convenience. Upon unpausing the DAG it will run once and afterwards can be used to manually start a run of the whole Data pipeline. This DAG contains one task using the [EmptyOperator](https://registry.astronomer.io/providers/apache-airflow/modules/emptyoperator) to produce to the `start` Dataset.
+The `start` DAG exists for user convenience and to create an [Airflow Pool](https://docs.astronomer.io/learn/airflow-pools) called `duckdb` with one worker slot in order to prevent tasks running queries against DuckDB from overlapping. Upon unpausing the DAG it will run once and afterwards can be used to manually start a run of the whole data pipeline. This DAG contains one task using the [BashOperator](https://registry.astronomer.io/providers/apache-airflow/modules/bashoperator) to create the pool and produce to the `start` Dataset.
 
 This DAG as all DAGs in this project uses the `@dag` decorator from the TaskFlow API. Learn more in [Introduction to Airflow decorators](https://docs.astronomer.io/learn/airflow-decorators).
 
@@ -107,7 +107,7 @@ This DAG will use a re-useable task group to create a `climate` bucket in MinIO 
 
 Learn more about task groups in the [Airflow task groups](https://docs.astronomer.io/learn/task-groups) guide and more about how to create reuseable task groups in the [Reusable DAG Patterns with TaskGroups](https://www.astronomer.io/events/live/reusable-dag-patterns-with-taskgroups/) webinar.
 
-After preparing the bucket. The DAG uses a dynamically mapped task called `ingest_climate_data` to ingest each file located in `include/climate_data` into MinIO. Dynamic task mapping is an Airflow feature that allows you to adjust the number of tasks used dynamically at runtime. See also the [Create dynamic Airflow tasks](https://docs.astronomer.io/learn/dynamic-tasks) guide.
+After preparing the bucket. The DAG uses the custom `LocalFilesystemToMinIOOperator` to ingest each file located in `include/climate_data` into MinIO. The operator uses dynamic task mapping, which makes it easy to add other `local_file_path`/`object_name` pairs to ingest additional files. Dynamic task mapping is an Airflow feature that allows you to adjust the number of tasks used dynamically at runtime. See also the [Create dynamic Airflow tasks](https://docs.astronomer.io/learn/dynamic-tasks) guide.
 
 #### in_local_weather
 
@@ -117,7 +117,7 @@ As the `in_climate_data` DAG, this DAG will use the re-useable `CreateBucket` cl
 
 In parallel the DAG will convert the city name you provided to coordinates and query an open API to retrieve the current weather for that location. 
 
-The last task in the DAG writes the API response to the MinIO bucket.
+The last task in the DAG writes the API response to the MinIO bucket using the `LocalFilesystemToMinIOOperator`.
 
 This DAG passes information from one task to another using XCom. Learn more about this core Airflow feature in the [Pass data between tasks](https://docs.astronomer.io/learn/airflow-passing-data-between-tasks) guide.
 
@@ -125,13 +125,13 @@ This DAG passes information from one task to another using XCom. Learn more abou
 
 ![load_data DAG](src/load_data_dag.png)
 
-This DAG will first retrieve lists of objects in the MinIO weather and climate bucket in order to load the contents of these objects into tables within DuckDB. After this step the `CreateBucket` class is used to create an `archive` bucket where all objects from the `weather` and `climate` bucket are copied into, before they are deleted from their ingestion buckets. This pattern ensures that only recent data is being processed every time the pipeline runs.
+This DAG will first retrieve lists of objects in the MinIO weather and climate buckets in order to load the contents of these objects into tables within DuckDB. After this step the `CreateBucket` class is used to create an `archive` bucket where all objects from the `weather` and `climate` bucket are copied into, before they are deleted from their ingestion buckets. This pattern ensures that only recent data is being processed every time the pipeline runs.
 
 #### create_reporting_table
 
 ![create_reporting_table DAG](src/create_reporting_table.png)
 
-This DAG uses another Astronomer Open Source project, the [Astro SDK](https://astro-sdk-python.readthedocs.io/en/stable/index.html) to run a transformation statement on data in DuckDB. The result from this transformation statement which selects the records from the climate data pertinent to the country you specified as `MY_COUNTRY` are appended to a newly created reporting table. You can learn more about the Astro SDK in the [Write a DAG with the Astro Python SDK](https://docs.astronomer.io/learn/astro-python-sdk) tutorial. 
+This DAG uses another Astronomer Open Source project, the [Astro SDK](https://astro-sdk-python.readthedocs.io/en/stable/index.html) to run a transformation statement on data in DuckDB. The result from this transformation statement which uses partitions to create temperature averages for each decade as well as year and month, is stored in a new table. You can learn more about the Astro SDK in the [Write a DAG with the Astro Python SDK](https://docs.astronomer.io/learn/astro-python-sdk) tutorial. 
 
 #### run_streamlit_app
 
