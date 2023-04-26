@@ -17,6 +17,8 @@ This project was created with :heart: by [Astronomer](https://www.astronomer.io/
 
 > If you are looking for an entry level written tutorial where you build your own DAG from scratch check out: [Get started with Apache Airflow, Part 1: Write and run your first DAG](https://docs.astronomer.io/learn/get-started-with-airflow).
 
+> This repository is complete and meant to be used as a blueprint to build on or to explore Airflow features. A very similar repository that includes specific exercises to learn more about Datasets, dynamic task mapping and the Astro Python SDK is the [Airflow Quickstart](https://github.com/astronomer/airflow-quickstart).
+
 -------------------------------
 
 How to use this repository
