@@ -39,8 +39,9 @@ def in_climate_data():
         task_id="create_climate_bucket", bucket_name=gv.CLIMATE_BUCKET_NAME
     )
 
-    # dynamically map over the custom LocalCSVToMinIOOperator to read the contents
-    # of 2 local csv files to MinIO
+    # use the custom LocalCSVToMinIOOperator to read the contents in /include/climate
+    # into MinIO. This task uses dynamic task allowing you to add additional files to
+    # the folder and reading them in without changing any DAG code
     ingest_climate_data = LocalFilesystemToMinIOOperator.partial(
         task_id="ingest_climate_data",
         bucket_name=gv.CLIMATE_BUCKET_NAME,
