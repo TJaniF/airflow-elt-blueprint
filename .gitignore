@@ -1,7 +1,15 @@
 .git
+.idea
 .DS_Store # macOS specific ignore
 include/.DS_Store # macOS specific ignore
 airflow_settings.yaml
 astro
 __pycache__
 include/minio
+
+# Environments
+.env
+.venv
+env/
+venv/
+.env
