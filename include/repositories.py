@@ -1,6 +1,6 @@
+import io
 import json
 import logging
-from collections.abc import Iterator
 
 import firebase_admin
 import httpx
@@ -10,8 +10,9 @@ from tensorflow import keras
 
 from include.entities import Image
 from include.entities import ImagesCountResponse
-from include.entities import Material
 from include.entities import MLModel
+from include.entities import Material
+from minio import Minio
 
 LOGGER = logging.getLogger(__name__)
 
@@ -91,11 +92,14 @@ class BackendRepository:
             else:
                 response.raise_for_status()
 
-    def download_image(self, image: Image) -> Iterator[bytes]:
+    def download_image(self, image: Image) -> io.BytesIO:
         with httpx.Client() as client:
-            response = client.get(f'{self.base_url}/images/file/{image.filename}/')
+            url = f'{self.base_url}/images/file/{image.filename}/'
+            print(url)
+            response = client.get(url)
             if response.status_code == 200:
-                return response.iter_bytes()
+                image_data = response.content
+                return io.BytesIO(image_data)
             else:
                 response.raise_for_status()
 
@@ -163,3 +167,20 @@ class FirebaseRepository:
             model_source=ml.TFLiteGCSModelSource.from_keras_model(model)
         )
         ml.update_model(existing_model)
+
+
+class MinioRepository:
+
+    def __init__(self, conn_type: str, host: str, login: str, password: str):
+        self.minio_client = Minio(
+            conn_type,
+            host,
+            login,
+            password
+        )
+
+    def save_images(self, material: Material, image: Image, image_data: io.BytesIO):
+        object_key = f'{material.order:02}-{material.name}/{image.filename}'
+        self.minio_client.put_object(bucket_name='images', object_name=object_key,
+                                     data=image_data, length=image_data.getbuffer().nbytes)
+        print(f"Uploaded {object_key} to MinIO bucket.")

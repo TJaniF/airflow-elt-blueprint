@@ -1,12 +1,14 @@
+import io
+import json
+from typing import Union
+
 from airflow.exceptions import AirflowException
 from airflow.hooks.base import BaseHook
 from airflow.models.baseoperator import BaseOperator
-from minio import Minio
-import io
-import json
 from minio.commonconfig import CopySource
 from minio.deleteobjects import DeleteObject
-from typing import Union
+
+from minio import Minio
 
 
 # define the class inheriting from an existing hook class
@@ -23,11 +25,11 @@ class MinIOHook(BaseHook):
 
     # define the .__init__() method that runs when the DAG is parsed
     def __init__(
-        self,
-        minio_conn_id: str = "minio_default",
-        secure_connection=False,
-        *args,
-        **kwargs,
+            self,
+            minio_conn_id: str = "minio_default",
+            secure_connection=False,
+            *args,
+            **kwargs,
     ) -> None:
         # initialize the parent hook
         super().__init__(*args, **kwargs)
@@ -83,7 +85,7 @@ class MinIOHook(BaseHook):
         return list_of_objects
 
     def copy_object(
-        self, source_bucket_name, source_object_name, dest_bucket_name, dest_object_name
+            self, source_bucket_name, source_object_name, dest_bucket_name, dest_object_name
     ):
         """
         Copy a file from one MinIO bucket to another.
@@ -148,16 +150,16 @@ class LocalFilesystemToMinIOOperator(BaseOperator):
 
     # define the .__init__() method that runs when the DAG is parsed
     def __init__(
-        self,
-        bucket_name,
-        object_name,
-        local_file_path=None,
-        json_serializeable_information=None,
-        minio_conn_id: str = MinIOHook.default_conn_name,
-        length=-1,
-        part_size=10 * 1024 * 1024,
-        *args,
-        **kwargs,
+            self,
+            bucket_name,
+            object_name,
+            local_file_path=None,
+            json_serializeable_information=None,
+            minio_conn_id: str = MinIOHook.default_conn_name,
+            length=-1,
+            part_size=10 * 1024 * 1024,
+            *args,
+            **kwargs,
     ):
         # initialize the parent operator
         super().__init__(*args, **kwargs)
@@ -218,12 +220,12 @@ class MinIOListOperator(BaseOperator):
     """
 
     def __init__(
-        self,
-        bucket_name,
-        prefix: str = "",
-        minio_conn_id: str = MinIOHook.default_conn_name,
-        *args,
-        **kwargs,
+            self,
+            bucket_name,
+            prefix: str = "",
+            minio_conn_id: str = MinIOHook.default_conn_name,
+            *args,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.bucket_name = bucket_name
@@ -258,14 +260,14 @@ class MinIOCopyObjectOperator(BaseOperator):
     )
 
     def __init__(
-        self,
-        source_bucket_name,
-        source_object_names: Union[str, list],
-        dest_bucket_name,
-        dest_object_names: Union[str, list],
-        minio_conn_id: str = MinIOHook.default_conn_name,
-        *args,
-        **kwargs,
+            self,
+            source_bucket_name,
+            source_object_names: Union[str, list],
+            dest_bucket_name,
+            dest_object_names: Union[str, list],
+            minio_conn_id: str = MinIOHook.default_conn_name,
+            *args,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.source_bucket_name = source_bucket_name
@@ -279,7 +281,7 @@ class MinIOCopyObjectOperator(BaseOperator):
                 "Please provide either one string each to source_object_names and dest_object_names or two lists of strings of equal length"
             )
         if type(self.source_object_names) == list and (
-            len(self.source_object_names) != len(self.dest_object_names)
+                len(self.source_object_names) != len(self.dest_object_names)
         ):
             raise AirflowException(
                 "The lists provided to source_object_names and dest_object_names need to be of equal lenght."
@@ -288,7 +290,7 @@ class MinIOCopyObjectOperator(BaseOperator):
     def execute(self, context):
         if type(self.source_object_names) == list:
             for source_object, dest_object in zip(
-                self.source_object_names, self.dest_object_names
+                    self.source_object_names, self.dest_object_names
             ):
                 MinIOHook(self.minio_conn_id).copy_object(
                     self.source_bucket_name,
@@ -319,13 +321,13 @@ class MinIODeleteObjectsOperator(BaseOperator):
     )
 
     def __init__(
-        self,
-        bucket_name,
-        object_names: Union[str, list],
-        minio_conn_id: str = MinIOHook.default_conn_name,
-        bypass_governance_mode=False,
-        *args,
-        **kwargs,
+            self,
+            bucket_name,
+            object_names: Union[str, list],
+            minio_conn_id: str = MinIOHook.default_conn_name,
+            bypass_governance_mode=False,
+            *args,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.bucket_name = bucket_name
@@ -336,4 +338,39 @@ class MinIODeleteObjectsOperator(BaseOperator):
     def execute(self, context):
         MinIOHook(self.minio_conn_id).delete_objects(
             self.bucket_name, self.object_names, self.bypass_governance_mode
+        )
+
+
+class MinIOPutObjectOperator(BaseOperator):
+    template_fields = (
+        "bucket_name",
+        "object_name",
+        "data",
+        "minio_conn_id",
+        "length",
+        "part_size",
+    )
+
+    def __init__(
+            self,
+            bucket_name,
+            object_name: Union[str, list],
+            data,
+            minio_conn_id: str = MinIOHook.default_conn_name,
+            length=-1,
+            part_size=10 * 1024 * 1024,
+            *args,
+            **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.bucket_name = bucket_name
+        self.object_name = object_name
+        self.data = data
+        self.minio_conn_id = minio_conn_id
+        self.length = length
+        self.part_size = part_size
+
+    def execute(self, context):
+        MinIOHook(self.minio_conn_id).put_object(
+            self.bucket_name, self.object_name, self.data,
         )

@@ -4,7 +4,12 @@ from datetime import datetime
 from datetime import timedelta
 
 from airflow.decorators import dag
-from airflow.decorators import task
+
+from include.repositories import BackendRepository
+from include.repositories import MinioRepository
+from include.repositories import TelegramRepository
+from include.settings import settings
+from include.train_model.tasks import download_new_images
 
 default_args = {
     'owner': 'Santiago Gandolfo',
@@ -25,15 +30,20 @@ default_args = {
     max_active_runs=1,
 )
 def train_model():
-    @task
-    def test_1():
-        print("Hello test_1")
+    backend_repository = BackendRepository(base_url=settings.BACKEND_URL)
+    telegram_repository = TelegramRepository(
+        base_url=settings.TELEGRAM_URL,
+        token=settings.TELEGRAM_TOKEN,
+        chat_id=settings.TELEGRAM_CHAT_ID,
+    )
+    minio_repository = MinioRepository(
+        conn_type=settings.MINIO_CONN_TYPE,
+        host=settings.MINIO_HOST,
+        login=settings.MINIO_LOGIN,
+        password=settings.MINIO_PASSWORD,
+    )
 
-    @task
-    def test_2():
-        print("Hello test_1")
-
-    test_1() >> test_2()
+    download_new_images(backend_repository, minio_repository)
 
 
 train_model()
