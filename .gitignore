@@ -1,4 +1,5 @@
 .git
+.idea
 .DS_Store # macOS specific ignore
 include/.DS_Store # macOS specific ignore
 airflow_settings.yaml

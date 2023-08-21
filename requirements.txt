@@ -5,3 +5,8 @@ minio==7.1.13
 pandas==1.5.3
 airflow-provider-duckdb==0.0.2
 astro-sdk-python==1.5.0
+altair<5
+firebase-admin
+pydantic==1.10.0
+httpx==0.24.1
+tensorflow-cpu==2.13.0
