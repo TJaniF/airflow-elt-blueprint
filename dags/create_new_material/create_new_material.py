@@ -4,11 +4,13 @@ from datetime import datetime
 from datetime import timedelta
 
 from airflow.decorators import dag
-from airflow.decorators import task
 
+from include.create_new_material.tasks import create_new_materials
+from include.create_new_material.tasks import created_new_material
+from include.create_new_material.tasks import get_potential_tags
+from include.create_new_material.tasks import send_telegram_notification
 from include.repositories import BackendRepository
 from include.repositories import TelegramRepository
-from include.usecases import Usecases
 from include.settings import settings
 
 default_args = {
@@ -17,7 +19,7 @@ default_args = {
     'start_date': datetime(2023, 1, 1),
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1,
+    'retries': 0,
     'retry_delay': timedelta(minutes=5),
 }
 
@@ -36,16 +38,13 @@ def create_new_material():
         token=settings.TELEGRAM_TOKEN,
         chat_id=settings.TELEGRAM_CHAT_ID,
     )
-    usecases = Usecases(backend_repository, telegram_repository)
-    @task
-    def test_1():
-        final_tags = usecases.get_potential_tags()
-        new_materials = usecases.create_new_materials(
-            final_tags, threshold=settings.MATERIAL_CREATION_THRESHOLD
-        )
-        usecases.send_telegram_notification(new_materials)
 
-    test_1()
+    tags = get_potential_tags(backend_repository)
+    new_materials = create_new_materials(
+        backend_repository, tags, threshold=settings.MATERIAL_CREATION_THRESHOLD
+    )
+    created_new_material(new_materials) >> send_telegram_notification(telegram_repository,
+                                                                      new_materials)
+
 
 create_new_material()
-
