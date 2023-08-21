@@ -6,3 +6,10 @@ airflow_settings.yaml
 astro
 __pycache__
 include/minio
+
+# Environments
+.env
+.venv
+env/
+venv/
+.env
